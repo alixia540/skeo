@@ -1,8 +1,8 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
-import pdfParse from "pdf-parse/lib/pdf-parse.js"; // ✅ import correct pour Next/Vercel
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
+import { PDFDocument } from "pdf-lib"; // ✅ remplace pdf-parse
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,8 +10,14 @@ export const dynamic = "force-dynamic";
 /* ------------------------------- HELPERS ------------------------------- */
 async function extractFromPDF(buf: Buffer) {
   try {
-    const data = await pdfParse(buf);
-    return data.text || "";
+    const pdfDoc = await PDFDocument.load(buf);
+    let text = "";
+    const pages = pdfDoc.getPages();
+    for (const page of pages) {
+      const extracted = await page.getTextContent?.();
+      text += extracted?.items?.map((i) => i.str).join(" ") || "";
+    }
+    return text.trim();
   } catch (err) {
     console.error("Erreur PDF parse:", err);
     return "";
@@ -101,7 +107,7 @@ export async function POST(req: Request) {
         if (text.trim()) {
           extracted += `\n\n===== CONTENU DU FICHIER: ${f.name} =====\n${text.trim()}\n`;
         }
-      } catch (e) {
+      } catch {
         extracted += `\n\n[Erreur de lecture du fichier ${f.name}]`;
       }
     }
