@@ -7,12 +7,13 @@ import Tesseract from "tesseract.js";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// --- Extraction Helpers ---
+/* ------------------------------- HELPERS ------------------------------- */
 async function extractFromPDF(buf: Buffer) {
   try {
-    const data = await pdfParse.default ? pdfParse.default(buf) : pdfParse(buf);
+    const data = await (pdfParse.default ? pdfParse.default(buf) : pdfParse(buf));
     return data.text || "";
-  } catch {
+  } catch (err) {
+    console.error("Erreur PDF parse:", err);
     return "";
   }
 }
@@ -21,7 +22,8 @@ async function extractFromDOCX(buf: Buffer) {
   try {
     const { value } = await mammoth.extractRawText({ buffer: buf });
     return value || "";
-  } catch {
+  } catch (err) {
+    console.error("Erreur DOCX parse:", err);
     return "";
   }
 }
@@ -33,14 +35,14 @@ async function extractFromTXT(buf: Buffer) {
 async function extractFromImage(buf: Buffer) {
   try {
     const { data } = await Tesseract.recognize(buf, "fra+eng", {
-      // ✅ Correct: la config doit être passée sous "config"
       config: {
         tessedit_char_whitelist:
           "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_/.,:;()[]{}+%$€@!?'\" \n",
       },
     });
     return data.text || "";
-  } catch {
+  } catch (err) {
+    console.error("Erreur OCR:", err);
     return "";
   }
 }
@@ -49,7 +51,7 @@ function truncate(s: string, max = 8000) {
   return s.length <= max ? s : s.slice(0, max) + "\n\n[...] (contenu tronqué)";
 }
 
-// --- ROUTE POST ---
+/* ------------------------------- HANDLER ------------------------------- */
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
@@ -76,7 +78,6 @@ export async function POST(req: Request) {
     }
 
     const files = form.getAll("files") as unknown as File[];
-
     let extracted = "";
 
     for (const f of files) {
@@ -84,7 +85,6 @@ export async function POST(req: Request) {
         const ab = await f.arrayBuffer();
         const buf = Buffer.from(ab);
         const type = f.type || f.name.split(".").pop()?.toLowerCase() || "";
-
         let text = "";
 
         if (type.includes("pdf")) text = await extractFromPDF(buf);
@@ -101,13 +101,13 @@ export async function POST(req: Request) {
         if (text.trim()) {
           extracted += `\n\n===== CONTENU DU FICHIER: ${f.name} =====\n${text.trim()}\n`;
         }
-      } catch {
+      } catch (e) {
         extracted += `\n\n[Erreur de lecture du fichier ${f.name}]`;
       }
     }
 
-    // ✅ Lis ton URL Ollama depuis l’environnement (.env ou Vercel)
-    const OLLAMA_URL = process.env.OLLAMA_URL || "http://127.0.0.1:11434";
+    /* -------------------- Génération via Ollama distant -------------------- */
+    const OLLAMA_URL = process.env.OLLAMA_URL || "https://skeo-ollama.fly.dev";
 
     const finalPrompt = [
       promptBase,
@@ -116,18 +116,17 @@ export async function POST(req: Request) {
       truncate(extracted),
       "",
       "===== INSTRUCTIONS =====",
-      "1) Génére un CV clair et professionnel en Markdown.",
+      "1) Génére un CV clair, professionnel et en Markdown.",
       "2) Structure : Résumé, Compétences, Expériences, Formation, Projets.",
-      "3) Utilise les infos du candidat et les fichiers.",
-      "4) Ne renvoie QUE le texte final du CV.",
+      "3) Utilise les infos du candidat et les fichiers joints.",
+      "4) Ne renvoie QUE le texte final du CV (sans explications).",
     ].join("\n");
 
-    // ✅ Appel vers ton instance Ollama distante
     const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama3", // ton modèle (ex: llama3, mistral, phi3…)
+        model: "llama3",
         prompt: finalPrompt,
         stream: false,
         options: { temperature: 0.6, top_p: 0.9, num_ctx: 4096 },
