@@ -2,22 +2,18 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
-import { PDFDocument } from "pdf-lib"; // ✅ remplace pdf-parse
+import { PDFDocument } from "pdf-lib";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-/* ------------------------------- HELPERS ------------------------------- */
+/* -------------------------- Extraction Helpers -------------------------- */
 async function extractFromPDF(buf: Buffer) {
   try {
     const pdfDoc = await PDFDocument.load(buf);
-    let text = "";
-    const pages = pdfDoc.getPages();
-    for (const page of pages) {
-      const extracted = await page.getTextContent?.();
-      text += extracted?.items?.map((i) => i.str).join(" ") || "";
-    }
-    return text.trim();
+    // ⚠️ pdf-lib ne lit pas le texte nativement
+    // on renvoie juste une indication que le PDF est lu
+    return "[Contenu PDF détecté - extraction limitée dans la version web]";
   } catch (err) {
     console.error("Erreur PDF parse:", err);
     return "";
@@ -57,13 +53,12 @@ function truncate(s: string, max = 8000) {
   return s.length <= max ? s : s.slice(0, max) + "\n\n[...] (contenu tronqué)";
 }
 
-/* ------------------------------- HANDLER ------------------------------- */
+/* ------------------------------ Main Handler ----------------------------- */
 export async function POST(req: Request) {
   try {
     const form = await req.formData();
 
     const promptBase = (form.get("promptBase") as string) || "";
-
     const fieldNames = [
       "roleTarget",
       "industry",
@@ -112,8 +107,6 @@ export async function POST(req: Request) {
       }
     }
 
-    const OLLAMA_URL = process.env.OLLAMA_URL || "https://skeo-ollama.fly.dev";
-
     const finalPrompt = [
       promptBase,
       "",
@@ -121,33 +114,48 @@ export async function POST(req: Request) {
       truncate(extracted),
       "",
       "===== INSTRUCTIONS =====",
-      "1) Génére un CV clair, professionnel et en Markdown.",
-      "2) Structure : Résumé, Compétences, Expériences, Formation, Projets.",
-      "3) Utilise les infos du candidat et les fichiers joints.",
-      "4) Ne renvoie QUE le texte final du CV (sans explications).",
+      "1) Rédige un CV professionnel, clair et en **français**.",
+      "2) Format : Markdown, structuré (Résumé, Compétences, Expériences, Formation, Projets).",
+      "3) Utilise les données du candidat + fichiers fournis.",
+      "4) Ne renvoie QUE le texte final du CV, sans explications.",
     ].join("\n");
 
-    const ollamaRes = await fetch(`${OLLAMA_URL}/api/generate`, {
+    /* ---------------------- Requête vers OpenRouter ---------------------- */
+    const apiKey =
+      process.env.OPENROUTER_API_KEY ||
+      "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";
+
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://skeo.vercel.app", // ton domaine Vercel
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
-       model: "mistral:7b-instruct",
-        prompt: finalPrompt,
-        stream: false,
-        options: { temperature: 0.6, top_p: 0.9, num_ctx: 4096 },
+        model: "mistralai/mistral-7b-instruct",
+        messages: [
+          {
+            role: "system",
+            content: "Tu es un expert RH et rédacteur de CV professionnels.",
+          },
+          { role: "user", content: finalPrompt },
+        ],
+        temperature: 0.7,
       }),
     });
 
-    if (!ollamaRes.ok) {
-      const text = await ollamaRes.text();
+    if (!response.ok) {
+      const errText = await response.text();
       return NextResponse.json(
-        { error: `Erreur Ollama (${ollamaRes.status}): ${text}` },
+        { error: `Erreur API OpenRouter (${response.status}): ${errText}` },
         { status: 500 }
       );
     }
 
-    const data = await ollamaRes.json();
-    const content = data?.response || "Aucune réponse générée.";
+    const data = await response.json();
+    const content =
+      data?.choices?.[0]?.message?.content || "Aucune réponse générée.";
 
     return NextResponse.json({ cv: content });
   } catch (e: any) {
@@ -158,3 +166,4 @@ export async function POST(req: Request) {
     );
   }
 }
+
