@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 type FormCore = {
   roleTarget: string;
   industry: string;
-  strengths: string; // 2-4 réalisations fortes
+  strengths: string;
   tone: "Sobre" | "Moderne" | "Créatif";
   color: "Bleu" | "Vert" | "Violet" | "Gris";
   fullName: string;
@@ -15,6 +15,9 @@ type FormCore = {
   phone: string;
   city: string;
   linkedin?: string;
+  experienceLevel?: string;
+  jobType?: string;
+  languages?: string;
 };
 
 const initial: FormCore = {
@@ -28,6 +31,9 @@ const initial: FormCore = {
   phone: "",
   city: "",
   linkedin: "",
+  experienceLevel: "",
+  jobType: "",
+  languages: "",
 };
 
 export default function AICVGenerator() {
@@ -53,37 +59,40 @@ export default function AICVGenerator() {
   const removeFile = (i: number) =>
     setFiles((prev) => prev.filter((_, idx) => idx !== i));
 
-  // progress “vivant”
   useEffect(() => {
     if (!loading) return;
     setProgress(10);
     const id = setInterval(() => {
-      setProgress((p) => (p < 90 ? p + Math.random() * 8 : p));
-    }, 450);
+      setProgress((p) => (p < 90 ? p + Math.random() * 6 : p));
+    }, 400);
     return () => clearInterval(id);
   }, [loading]);
 
   const promptBase = useMemo(() => {
     return [
-      `RÔLE: Tu es un expert RH + designer de CV.`,
-      `OBJECTIF: Générer un CV en **FRANÇAIS**, format **Markdown** uniquement (pas de commentaires), lisible, clair et orienté résultats.`,
-      `STYLE: ${data.tone}, palette dominante: ${data.color}.`,
+      `RÔLE: Tu es un expert RH, coach carrière et designer de CV.`,
+      `OBJECTIF: Créer un CV complet, clair et structuré en **Markdown**, adapté à un profil francophone.`,
+      `STYLE: ${data.tone}, palette ${data.color}.`,
       ``,
-      `CANDIDAT: ${data.fullName || "Nom Prénom"} – ${data.city}`,
+      `CANDIDAT: ${data.fullName} (${data.city})`,
       `CONTACT: ${data.email} – ${data.phone}`,
       data.linkedin ? `LinkedIn: ${data.linkedin}` : ``,
       ``,
+      `NIVEAU D’EXPÉRIENCE: ${data.experienceLevel || "non précisé"}`,
+      `TYPE DE POSTE: ${data.jobType || "non précisé"}`,
+      `LANGUES: ${data.languages || "non précisées"}`,
+      ``,
       `POSTE VISÉ: ${data.roleTarget} – Domaine: ${data.industry}`,
-      `FORCES / FAITS MARQUANTS: ${data.strengths}`,
+      `FORCES / RÉALISATIONS: ${data.strengths}`,
       ``,
       `MISE EN FORME DEMANDÉE:`,
       `# NOM PRÉNOM`,
       `**Poste visé** · Ville · email · tel · linkedin`,
-      `## Résumé (2–4 lignes)`,
-      `## Compétences (Hard/Soft/Langues)`,
-      `## Expériences (ordre inverse chrono, 3–6 bullets à impact chiffré)`,
+      `## Résumé (2–4 lignes maximum)`,
+      `## Compétences (Hard / Soft / Langues)`,
+      `## Expériences (3–6 bullet points avec résultats chiffrés)`,
       `## Formation`,
-      `## Projets (si pertinent)`,
+      `## Projets ou Réalisations marquantes`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -120,9 +129,9 @@ export default function AICVGenerator() {
 
   const onPrint = () => window.print();
 
+  const grad = "from-blue-600 to-teal-400";
   const card =
     "card hover:-translate-y-1 bg-white/90 dark:bg-[#0f172a]/70 backdrop-blur-md transition-all duration-300";
-  const grad = "from-blue-600 to-teal-400";
 
   return (
     <div className="max-w-6xl mx-auto px-6">
@@ -135,14 +144,14 @@ export default function AICVGenerator() {
       </motion.h2>
 
       <div className="grid lg:grid-cols-2 gap-8">
-        {/* FORM */}
+        {/* FORMULAIRE */}
         <div className={card}>
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold">Tes infos clés</h3>
-            <div className="text-sm opacity-70">Étape {step} / 3</div>
+            <h3 className="text-xl font-semibold">Tes infos</h3>
+            <div className="text-sm opacity-70">Étape {step} / 4</div>
           </div>
 
-          {/* Étape 1 : objectifs & style */}
+          {/* Étape 1 */}
           {step === 1 && (
             <div className="space-y-4">
               <Input
@@ -152,18 +161,17 @@ export default function AICVGenerator() {
                 placeholder="Ex: Développeur Frontend"
               />
               <Input
-                label="Domaine"
+                label="Domaine / secteur"
                 value={data.industry}
                 onChange={(v) => handleChange("industry", v)}
-                placeholder="Ex: Tech, Santé, Industrie…"
+                placeholder="Ex: Tech, Marketing, Santé…"
               />
               <TextArea
-                label="Tes 2–4 forces / résultats marquants"
+                label="Quelques forces ou réalisations marquantes"
                 value={data.strengths}
                 onChange={(v) => handleChange("strengths", v)}
-                placeholder="Ex: +35% de conversion, 2 applis publiées, certif AWS…"
+                placeholder="Ex: +30% de ventes, MVP livré en 2 mois…"
               />
-
               <div className="grid sm:grid-cols-2 gap-4">
                 <Select
                   label="Style"
@@ -181,46 +189,49 @@ export default function AICVGenerator() {
             </div>
           )}
 
-          {/* Étape 2 : identité & contact */}
+          {/* Étape 2 */}
           {step === 2 && (
             <div className="space-y-4">
               <div className="grid sm:grid-cols-2 gap-4">
-                <Input
-                  label="Nom complet"
-                  value={data.fullName}
-                  onChange={(v) => handleChange("fullName", v)}
-                />
-                <Input
-                  label="Ville"
-                  value={data.city}
-                  onChange={(v) => handleChange("city", v)}
-                />
-                <Input
-                  label="Email"
-                  value={data.email}
-                  onChange={(v) => handleChange("email", v)}
-                />
-                <Input
-                  label="Téléphone"
-                  value={data.phone}
-                  onChange={(v) => handleChange("phone", v)}
-                />
-                <Input
-                  label="LinkedIn (optionnel)"
-                  value={data.linkedin || ""}
-                  onChange={(v) => handleChange("linkedin", v)}
-                />
+                <Input label="Nom complet" value={data.fullName} onChange={(v) => handleChange("fullName", v)} />
+                <Input label="Ville" value={data.city} onChange={(v) => handleChange("city", v)} />
+                <Input label="Email" value={data.email} onChange={(v) => handleChange("email", v)} />
+                <Input label="Téléphone" value={data.phone} onChange={(v) => handleChange("phone", v)} />
+                <Input label="LinkedIn (optionnel)" value={data.linkedin} onChange={(v) => handleChange("linkedin", v)} />
               </div>
             </div>
           )}
 
-          {/* Étape 3 : Upload fichiers */}
+          {/* Étape 3 */}
           {step === 3 && (
+            <div className="space-y-4">
+              <Select
+                label="Niveau d’expérience"
+                value={data.experienceLevel}
+                options={["Débutant", "Intermédiaire", "Confirmé", "Expert"]}
+                onChange={(v) => handleChange("experienceLevel", v)}
+              />
+              <Select
+                label="Type de poste"
+                value={data.jobType}
+                options={["CDI", "CDD", "Alternance", "Stage", "Freelance"]}
+                onChange={(v) => handleChange("jobType", v)}
+              />
+              <Input
+                label="Langues"
+                value={data.languages}
+                onChange={(v) => handleChange("languages", v)}
+                placeholder="Ex: Français (C2), Anglais (B2)"
+              />
+            </div>
+          )}
+
+          {/* Étape 4 */}
+          {step === 4 && (
             <div className="space-y-4">
               <label className="block">
                 <span className="text-sm opacity-80">
-                  Ajoute tes fichiers (CV existant, portfolio, descriptions de
-                  postes, captures…). Formats: PDF, DOCX, TXT, PNG/JPG.
+                  Ajoute tes fichiers (CV existant, portfolio, lettre, images…)
                 </span>
                 <input
                   type="file"
@@ -231,19 +242,11 @@ export default function AICVGenerator() {
               </label>
 
               {!!files.length && (
-                <ul className="mt-2 space-y-2">
+                <ul className="mt-2 space-y-2 text-sm">
                   {files.map((f, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center justify-between rounded-lg border border-gray-200 dark:border-gray-700 px-3 py-2"
-                    >
-                      <span className="truncate">{f.name}</span>
-                      <button
-                        className="text-red-600 dark:text-red-400 text-sm"
-                        onClick={() => removeFile(i)}
-                      >
-                        Supprimer
-                      </button>
+                    <li key={i} className="flex justify-between border rounded-lg px-3 py-2">
+                      <span className="truncate">{f.name} ({(f.size / 1024).toFixed(1)} Ko)</span>
+                      <button className="text-red-500" onClick={() => removeFile(i)}>Supprimer</button>
                     </li>
                   ))}
                 </ul>
@@ -251,7 +254,7 @@ export default function AICVGenerator() {
             </div>
           )}
 
-          {/* Actions */}
+          {/* Navigation boutons */}
           <div className="mt-6 flex items-center justify-between">
             <button
               onClick={() => setStep((s) => Math.max(1, s - 1))}
@@ -260,9 +263,9 @@ export default function AICVGenerator() {
             >
               ← Précédent
             </button>
-            {step < 3 ? (
+            {step < 4 ? (
               <button
-                onClick={() => setStep((s) => Math.min(3, s + 1))}
+                onClick={() => setStep((s) => Math.min(4, s + 1))}
                 className={`px-4 py-2 rounded-lg bg-gradient-to-r ${grad} text-white`}
               >
                 Continuer →
@@ -273,12 +276,11 @@ export default function AICVGenerator() {
                 disabled={loading}
                 className={`px-5 py-3 rounded-xl font-semibold shadow-sm bg-gradient-to-r ${grad} text-white`}
               >
-                {loading ? "Génération…" : "Générer mon CV"}
+                {loading ? "Génération…" : "🚀 Générer mon CV"}
               </button>
             )}
           </div>
 
-          {/* Progress */}
           {loading && (
             <div className="mt-5">
               <div className="w-full h-3 rounded-full bg-black/5 dark:bg-white/10 overflow-hidden">
@@ -288,14 +290,12 @@ export default function AICVGenerator() {
                 />
               </div>
               <p className="mt-2 text-sm opacity-70">
-                Analyse des fichiers + génération ({Math.round(progress)}%)
+                Analyse + génération IA ({Math.round(progress)}%)
               </p>
             </div>
           )}
 
-          {error && (
-            <p className="mt-4 text-red-600 dark:text-red-400 text-sm">{error}</p>
-          )}
+          {error && <p className="mt-4 text-red-500 text-sm">{error}</p>}
         </div>
 
         {/* PREVIEW */}
@@ -308,7 +308,7 @@ export default function AICVGenerator() {
                 className={`px-4 py-2 rounded-lg bg-gradient-to-r ${grad} text-white`}
                 disabled={loading}
               >
-                {loading ? "Génération…" : "Relancer"}
+                Relancer
               </button>
               <button
                 onClick={onPrint}
@@ -324,7 +324,7 @@ export default function AICVGenerator() {
             <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-700 p-8 text-center">
               <p className="opacity-70">
                 Le CV apparaîtra ici après la génération.  
-                Renseigne les 3 étapes puis clique <b>Générer</b>.
+                Renseigne les 4 étapes puis clique <b>Générer</b>.
               </p>
             </div>
           ) : (
@@ -341,7 +341,7 @@ export default function AICVGenerator() {
   );
 }
 
-/* UI mini-compos */
+/* === UI MINI COMPOSANTS === */
 function Input({ label, value, onChange, placeholder }: any) {
   return (
     <label className="block">
@@ -350,7 +350,7 @@ function Input({ label, value, onChange, placeholder }: any) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
       />
     </label>
   );
@@ -362,7 +362,7 @@ function Select({ label, value, options, onChange }: any) {
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
       >
         {options.map((o: string) => (
           <option key={o}>{o}</option>
@@ -380,7 +380,7 @@ function TextArea({ label, value, onChange, placeholder }: any) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="mt-1 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white/80 dark:bg-[#0b1220]/60 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-400"
       />
     </label>
   );

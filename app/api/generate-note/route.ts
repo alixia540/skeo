@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
-import pdfParse from "pdf-parse";
+import * as pdfParse from "pdf-parse";
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 // --- Extraction Helpers ---
 async function extractFromPDF(buf: Buffer) {
   try {
-    const data = await pdfParse(buf);
+    const data = await pdfParse.default ? pdfParse.default(buf) : pdfParse(buf);
     return data.text || "";
   } catch {
     return "";
