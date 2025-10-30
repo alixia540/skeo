@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { NextResponse } from "next/server";
-import * as pdfParse from "pdf-parse";
+import pdfParse from "pdf-parse/lib/pdf-parse.js"; // ✅ import correct pour Next/Vercel
 import mammoth from "mammoth";
 import Tesseract from "tesseract.js";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 /* ------------------------------- HELPERS ------------------------------- */
 async function extractFromPDF(buf: Buffer) {
   try {
-    const data = await (pdfParse.default ? pdfParse.default(buf) : pdfParse(buf));
+    const data = await pdfParse(buf);
     return data.text || "";
   } catch (err) {
     console.error("Erreur PDF parse:", err);
@@ -106,7 +106,6 @@ export async function POST(req: Request) {
       }
     }
 
-    /* -------------------- Génération via Ollama distant -------------------- */
     const OLLAMA_URL = process.env.OLLAMA_URL || "https://skeo-ollama.fly.dev";
 
     const finalPrompt = [
