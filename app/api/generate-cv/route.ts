@@ -107,18 +107,48 @@ export async function POST(req: Request) {
       }
     }
 
-    const finalPrompt = [
-      promptBase,
-      "",
-      "===== CONTEXTE FICHIERS =====",
-      truncate(extracted),
-      "",
-      "===== INSTRUCTIONS =====",
-      "1) Rédige un CV professionnel, clair et en **français**.",
-      "2) Format : Markdown, structuré (Résumé, Compétences, Expériences, Formation, Projets).",
-      "3) Utilise les données du candidat + fichiers fournis.",
-      "4) Ne renvoie QUE le texte final du CV, sans explications.",
-    ].join("\n");
+    const finalPrompt = `
+Tu es un **expert RH et concepteur de CV premium**, spécialisé dans la rédaction de CV modernes, humains et impactants pour des profils professionnels variés.
+
+🧩 **Contexte candidat**
+Nom complet : ${fields.fullName || "Nom Prénom"}
+Poste visé : ${fields.roleTarget}
+Secteur d’activité : ${fields.industry}
+Ville : ${fields.city}
+Email : ${fields.email}
+Téléphone : ${fields.phone}
+LinkedIn : ${fields.linkedin || "Non fourni"}
+
+💼 **Forces et réalisations**
+${fields.strengths || "Aucune renseignée"}
+
+🎨 **Style demandé**
+- Ton : ${fields.tone}
+- Palette dominante : ${fields.color}
+- Format : **Markdown uniquement**
+- Longueur : ~1 page (environ 300–400 mots)
+
+📂 **Fichiers du candidat (contenu brut fourni ci-dessous)** :
+${truncate(extracted)}
+
+---
+
+🎯 **Ta mission**
+1. Crée un **CV complet et professionnel** en **français**.
+2. Mets en avant les **résultats chiffrés, expériences pertinentes et compétences clés**.
+3. Écris avec un ton humain, naturel et percutant.
+4. Structure le CV ainsi :
+   - # NOM PRÉNOM
+   - **Poste visé** · Ville · email · téléphone · LinkedIn
+   - ## Profil / Résumé (3–4 phrases dynamiques)
+   - ## Compétences (séparées en Hard Skills / Soft Skills / Langues)
+   - ## Expériences (avec puces, verbes d’action, résultats concrets)
+   - ## Formation
+   - ## Projets (si pertinents)
+5. Utilise la mise en forme Markdown élégante (titres, gras, listes).
+6. Ne renvoie **que le contenu final du CV**, sans explication, sans balises inutiles.
+`;
+
 
     /* ---------------------- Requête vers OpenRouter ---------------------- */
     const apiKey =
