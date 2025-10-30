@@ -131,7 +131,7 @@ export async function POST(req: Request) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "llama3",
+       model: "mistral:7b-instruct",
         prompt: finalPrompt,
         stream: false,
         options: { temperature: 0.6, top_p: 0.9, num_ctx: 4096 },
