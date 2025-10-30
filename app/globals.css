@@ -1,26 +1,151 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
+/* 🎨 Palette Skolr */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-primary: #2563eb; /* Bleu Skolr */
+  --color-secondary: #22d3ee; /* Turquoise clair */
+  --color-bg-top: #f9fafb;
+  --color-bg-bottom: #ffffff;
+  --color-dark: #0f172a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html.dark {
+  --color-primary: #60a5fa;
+  --color-secondary: #5eead4;
+  --color-bg-top: #0f172a;
+  --color-bg-bottom: #1e293b;
+  --color-dark: #f1f5f9;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* 🌈 Fond global */
+body {
+  font-family: "Inter", sans-serif;
+  background: linear-gradient(
+      180deg,
+      var(--color-bg-top) 0%,
+      var(--color-bg-bottom) 100%
+    ),
+    radial-gradient(circle at 30% 50%, rgba(36, 99, 235, 0.12), transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(94, 234, 212, 0.08), transparent 70%);
+  background-attachment: fixed;
+  color: var(--color-dark);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.5s ease, color 0.5s ease;
+}
+
+/* 🪄 Titres */
+h1, h2, h3 {
+  font-family: "Poppins", sans-serif;
+  font-weight: 700;
+}
+
+h1 span {
+  -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.1);
+}
+
+/* 🔘 Boutons */
+.btn {
+  @apply inline-flex items-center justify-center font-medium rounded-xl px-6 py-3 transition-all duration-300 shadow-sm;
+}
+
+.btn-primary {
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  color: white;
+  box-shadow: 0 4px 14px rgba(36, 99, 235, 0.35);
+}
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.03);
+  filter: brightness(1.1);
+}
+
+html.dark .btn-primary {
+  background: linear-gradient(to right, var(--color-secondary), #4dd0e1);
+  color: #0f172a;
+  box-shadow: 0 4px 14px rgba(94, 234, 212, 0.4);
+}
+html.dark .btn-primary:hover {
+  filter: brightness(1.15);
+}
+
+.btn-outline {
+  border: 2px solid var(--color-primary);
+  color: var(--color-primary);
+  background: transparent;
+}
+.btn-outline:hover {
+  background: var(--color-primary);
+  color: white;
+}
+html.dark .btn-outline {
+  border-color: var(--color-secondary);
+  color: var(--color-secondary);
+}
+html.dark .btn-outline:hover {
+  background: var(--color-secondary);
+  color: #0f172a;
+}
+
+/* ✨ Animation de dégradé fluide */
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
   }
 }
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 6s ease infinite;
 }
+
+/* 🧩 Cartes */
+.card {
+  @apply rounded-2xl border p-8 transition-all duration-300;
+  background: rgba(255, 255, 255, 0.8);
+  border-color: rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  backdrop-filter: blur(8px);
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px rgba(36, 99, 235, 0.15);
+}
+
+html.dark .card {
+  background: rgba(30, 41, 59, 0.8);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+}
+
+/* ⚙️ Sections */
+.section {
+  @apply max-w-6xl mx-auto px-6 py-24;
+}
+
+/* 🦶 Footer */
+footer {
+  background: linear-gradient(to right, var(--color-primary), var(--color-secondary));
+  color: white;
+  font-weight: 500;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+html.dark footer {
+  background: linear-gradient(to right, #1e293b, #0f172a);
+  color: #e2e8f0;
+  text-shadow: none;
+}
+
+@keyframes loadingBar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(0%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-loading-bar {
+  animation: loadingBar 2s linear infinite;
+}
+
